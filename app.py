@@ -2,7 +2,7 @@ import streamlit as st
 import warnings
 warnings.filterwarnings("ignore")
 
-# Import our custom modules
+# Import our custom modules (Make sure data.py and brain.py are in your repo)
 import data
 import brain
 
@@ -13,20 +13,18 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- 2. CSS STYLING (The "Pro" Look) ---
-# 👇👇👇 THIS IS THE SECTION THAT HIDES GITHUB & MENUS 👇👇👇
+# --- 2. CSS STYLING ("Stealth Mode" & Pro UI) ---
 st.markdown("""
 <style>
-    /* Hides the Top Right Menu (Three Dots) */
-    #MainMenu {visibility: hidden;}  
+    /* 1. THE "NUCLEAR OPTION" TO HIDE GITHUB/MENU/HEADER */
+    header {visibility: hidden;}
+    [data-testid="stHeader"] {visibility: hidden;}
+    [data-testid="stToolbar"] {visibility: hidden;}
+    .stDeployButton {display:none;}
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
 
-    /* Hides the "Made with Streamlit" Footer */
-    footer {visibility: hidden;}     
-
-    /* Hides the Top Header bar (Removes the GitHub / Deploy Button) */
-    header {visibility: hidden;}     
-    
-    /* Chat Bubbles Styling */
+    /* 2. CHAT BUBBLES STYLING */
     .user-msg {
         background-color: rgba(0, 255, 128, 0.1);
         border: 1px solid rgba(0, 255, 128, 0.4);
@@ -40,28 +38,32 @@ st.markdown("""
         margin: 10px 0; text-align: left;
         border-left: 4px solid #4CAF50;
     }
+    
+    /* 3. DIAGRAM CARD STYLING */
     div[data-testid="stImage"] {
         background-color: white; padding: 20px; border-radius: 10px;
         margin: 10px 0; box-shadow: 0px 4px 6px rgba(0,0,0,0.1); display: inline-block;
     }
+    
+    /* 4. BUTTON STYLING */
     .stButton>button {
         border-radius: 8px; min-height: 3em; height: auto;
         white-space: normal;
     }
 </style>
 """, unsafe_allow_html=True)
-# 👆👆👆 END OF HIDDEN MODE CODE 👆👆👆
 
-
-# --- 3. SIDEBAR ---
+# --- 3. SIDEBAR (Navigation & Controls) ---
 with st.sidebar:
     st.markdown("<h1 style='text-align: center;'>🧬</h1>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center;'>Human OS</h3>", unsafe_allow_html=True)
     st.divider()
     
+    # Language Selection
     language_mode = st.radio("🗣️ Language", ["English", "Semi-English (Hinglish)", "Marathi (पूर्ण मराठी)"])
     
     st.subheader("📚 Syllabus")
+    # Dynamic Dropdowns fetching from your data.py
     selected_class = st.selectbox("Class", list(data.MAHARASHTRA_SYLLABUS.keys()))
     selected_subject = st.selectbox("Subject", list(data.MAHARASHTRA_SYLLABUS[selected_class].keys()))
     selected_chapter = st.selectbox("Chapter", data.MAHARASHTRA_SYLLABUS[selected_class][selected_subject])
@@ -69,40 +71,45 @@ with st.sidebar:
     st.divider()
     enable_audio = st.toggle("🔊 Audio Mode", value=True)
 
-# --- 4. MAIN CHAT INTERFACE ---
+# --- 4. MAIN INTERFACE ---
 subject_icon = "🧪" if "Science" in selected_subject else "📐"
 st.title(f"{subject_icon} {selected_subject}")
 st.caption(f"**Chapter:** `{selected_chapter}`")
 
-# Initialize Chat
+# Initialize Session States
 if "messages" not in st.session_state: st.session_state.messages = []
 if "current_chapter" not in st.session_state: st.session_state.current_chapter = selected_chapter
 
+# Clear chat if user switches chapters
 if st.session_state.current_chapter != selected_chapter:
     st.session_state.messages = []
     st.session_state.current_chapter = selected_chapter
 
+# Display History
 for msg in st.session_state.messages:
     if msg["role"] == "user":
         st.markdown(f'<div class="user-msg"><b>You:</b><br>{msg["content"]}</div>', unsafe_allow_html=True)
     else:
         st.markdown(f'<div class="bot-msg"><b>Mentor:</b><br>{msg["content"]}</div>', unsafe_allow_html=True)
-        if msg.get("image"): st.image(msg["image"], width=300)
+        if msg.get("image"): st.image(msg["image"], width=400)
         if msg.get("audio"): st.audio(msg["audio"], format='audio/mp3')
 
+# Quick Concept Buttons (Appears only on empty chat)
 if len(st.session_state.messages) == 0:
     st.markdown("### 🔥 Key Concepts / महत्त्वाचे मुद्दे")
     q_lang_key = "English" 
     class_concepts = data.IMPORTANT_CONCEPTS.get(q_lang_key, {})
-    concepts = class_concepts.get(selected_chapter, class_concepts.get("default", ["Key Concepts"]))
+    concepts = class_concepts.get(selected_chapter, class_concepts.get("default", ["Overview"]))
     
     cols = st.columns(3)
     for i, concept in enumerate(concepts):
         if cols[i % 3].button(f"📌 {concept}", use_container_width=True, key=f"btn_{i}"):
             st.session_state.clicked_prompt = f"Explain {concept}"
 
+# --- 5. INPUT & AI LOGIC ---
 st.divider()
 user_input = None
+
 if "clicked_prompt" in st.session_state and st.session_state.clicked_prompt:
     user_input = st.session_state.clicked_prompt
     st.session_state.clicked_prompt = None
@@ -114,16 +121,20 @@ if user_input:
     st.session_state.messages.append({"role": "user", "content": display_text})
     st.rerun()
 
+# Generate AI Response
 if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     last_user_msg = st.session_state.messages[-1]["content"]
     
-    with st.spinner("🧠 Thinking... Fetching Visuals... Recording Audio..."):
+    with st.spinner("🧠 Mentor is thinking..."):
+        # 1. Text Response
         ai_text = brain.get_ai_response(last_user_msg, st.session_state.messages[:-1], selected_class, selected_subject, selected_chapter, language_mode)
         
+        # 2. Audio Generation
         audio_data = None
         if enable_audio and "⚠️" not in ai_text:
             audio_data = brain.get_audio_bytes(ai_text, language_mode)
         
+        # 3. Diagram Fetching
         diagram_url = brain.get_relevant_diagram(last_user_msg)
         
         st.session_state.messages.append({
