@@ -11,34 +11,34 @@ st.set_page_config(
     page_title="Human OS: Maharashtra Mentor",
     page_icon="🧬",
     layout="wide",
-    initial_sidebar_state="auto" 
+    initial_sidebar_state="collapsed" # Better for mobile users
 )
 
-# --- 2. CSS STYLING (Precision Fix for Sidebar) ---
+# --- 2. CSS STYLING (The Final Solution) ---
 st.markdown("""
 <style>
-    /* 1. HIDE ONLY THE GITHUB & DEPLOY BUTTONS ON THE RIGHT */
-    [data-testid="stToolbar"] {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    .stDeployButton {
-        display: none !important;
-    }
+    /* 1. HIDE THE ENTIRE TOP HEADER (GitHub, Deploy, Toolbar, etc.) */
+    header {visibility: hidden !important;}
+    [data-testid="stHeader"] {display: none !important;}
+    [data-testid="stToolbar"] {display: none !important;}
+    footer {visibility: hidden !important;}
 
-    /* 2. ENSURE THE SIDEBAR BUTTON (LEFT SIDE) IS VISIBLE */
-    header {
+    /* 2. CREATE A NEW FLOATING SIDEBAR BUTTON (Mobile Friendly) */
+    /* This creates a permanent, non-blinking menu button on the top left */
+    [data-testid="stSidebarCollapsedControl"] {
         visibility: visible !important;
-    }
-    [data-testid="stHeader"] {
-        background-color: rgba(0,0,0,0) !important;
+        display: block !important;
+        position: fixed !important;
+        top: 15px !important;
+        left: 15px !important;
+        background-color: #4CAF50 !important; /* Green background */
+        border-radius: 50% !important;
+        z-index: 99999 !important;
+        color: white !important;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.3) !important;
     }
 
-    /* 3. HIDE THE STREAMLIT MENU & FOOTER */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-
-    /* 4. CHAT UI STYLING */
+    /* 3. CHAT BUBBLES */
     .user-msg {
         background-color: rgba(0, 255, 128, 0.1);
         border: 1px solid rgba(0, 255, 128, 0.4);
@@ -52,16 +52,10 @@ st.markdown("""
         margin: 10px 0; text-align: left;
         border-left: 4px solid #4CAF50;
     }
-    
-    /* 5. DIAGRAM CARD STYLING */
-    div[data-testid="stImage"] {
-        background-color: white; padding: 20px; border-radius: 10px;
-        margin: 10px 0; box-shadow: 0px 4px 6px rgba(0,0,0,0.1); display: inline-block;
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR (Navigation & Controls) ---
+# --- 3. SIDEBAR ---
 with st.sidebar:
     st.markdown("<h1 style='text-align: center;'>🧬</h1>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center;'>Human OS</h3>", unsafe_allow_html=True)
@@ -86,6 +80,7 @@ subject_icon = "🧪" if "Science" in selected_subject else "📐"
 st.title(f"{subject_icon} {selected_subject}")
 st.caption(f"**Chapter:** `{selected_chapter}`")
 
+# Initialize Chat
 if "messages" not in st.session_state: st.session_state.messages = []
 if "current_chapter" not in st.session_state: st.session_state.current_chapter = selected_chapter
 
@@ -93,6 +88,7 @@ if st.session_state.current_chapter != selected_chapter:
     st.session_state.messages = []
     st.session_state.current_chapter = selected_chapter
 
+# Display History
 for msg in st.session_state.messages:
     if msg["role"] == "user":
         st.markdown(f'<div class="user-msg"><b>You:</b><br>{msg["content"]}</div>', unsafe_allow_html=True)
@@ -103,8 +99,7 @@ for msg in st.session_state.messages:
 
 if len(st.session_state.messages) == 0:
     st.markdown("### 🔥 Key Concepts")
-    q_lang_key = "English" 
-    class_concepts = data.IMPORTANT_CONCEPTS.get(q_lang_key, {})
+    class_concepts = data.IMPORTANT_CONCEPTS.get("English", {})
     concepts = class_concepts.get(selected_chapter, class_concepts.get("default", ["Overview"]))
     
     cols = st.columns(3)
@@ -123,8 +118,7 @@ else:
     user_input = st.chat_input("Ask a doubt here...")
 
 if user_input:
-    display_text = user_input.replace("Explain ", "")
-    st.session_state.messages.append({"role": "user", "content": display_text})
+    st.session_state.messages.append({"role": "user", "content": user_input.replace("Explain ", "")})
     st.rerun()
 
 if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
