@@ -11,22 +11,30 @@ st.set_page_config(
     page_title="Human OS: Maharashtra Mentor",
     page_icon="🧬",
     layout="wide",
-    initial_sidebar_state="expanded"  # Starts open on desktop, cleaner on mobile
+    initial_sidebar_state="auto" 
 )
 
-# --- 2. CSS STYLING (Precision Stealth & Menu Fix) ---
+# --- 2. CSS STYLING (Precision Fix for Sidebar) ---
 st.markdown("""
 <style>
-    /* 1. HIDE GITHUB & DEPLOY BUTTONS (Right Side) */
-    [data-testid="stToolbar"] {visibility: hidden; display: none !important;}
-    .stDeployButton {display:none !important;}
-    
-    /* 2. FORCE MENU BUTTON TO BE VISIBLE (Left Side) */
-    header {visibility: visible !important; background: transparent !important;}
-    [data-testid="stHeader"] {background: transparent !important;}
-    button[kind="header"] {visibility: visible !important;}
+    /* 1. HIDE ONLY THE GITHUB & DEPLOY BUTTONS ON THE RIGHT */
+    [data-testid="stToolbar"] {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    .stDeployButton {
+        display: none !important;
+    }
 
-    /* 3. HIDE STREAMLIT FOOTER & DEFAULT MENU */
+    /* 2. ENSURE THE SIDEBAR BUTTON (LEFT SIDE) IS VISIBLE */
+    header {
+        visibility: visible !important;
+    }
+    [data-testid="stHeader"] {
+        background-color: rgba(0,0,0,0) !important;
+    }
+
+    /* 3. HIDE THE STREAMLIT MENU & FOOTER */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
 
@@ -50,12 +58,6 @@ st.markdown("""
         background-color: white; padding: 20px; border-radius: 10px;
         margin: 10px 0; box-shadow: 0px 4px 6px rgba(0,0,0,0.1); display: inline-block;
     }
-    
-    /* 6. BUTTON STYLING */
-    .stButton>button {
-        border-radius: 8px; min-height: 3em; height: auto;
-        white-space: normal;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -65,11 +67,9 @@ with st.sidebar:
     st.markdown("<h3 style='text-align: center;'>Human OS</h3>", unsafe_allow_html=True)
     st.divider()
     
-    # Language Selection
     language_mode = st.radio("🗣️ Language", ["English", "Semi-English (Hinglish)", "Marathi (पूर्ण मराठी)"])
     
     st.subheader("📚 Syllabus")
-    # Dynamic Dropdowns
     selected_class = st.selectbox("Class", list(data.MAHARASHTRA_SYLLABUS.keys()))
     selected_subject = st.selectbox("Subject", list(data.MAHARASHTRA_SYLLABUS[selected_class].keys()))
     selected_chapter = st.selectbox("Chapter", data.MAHARASHTRA_SYLLABUS[selected_class][selected_subject])
@@ -77,7 +77,6 @@ with st.sidebar:
     st.divider()
     enable_audio = st.toggle("🔊 Audio Mode", value=True)
     
-    # Reset Chat Button
     if st.button("🗑️ Clear Chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
@@ -87,16 +86,13 @@ subject_icon = "🧪" if "Science" in selected_subject else "📐"
 st.title(f"{subject_icon} {selected_subject}")
 st.caption(f"**Chapter:** `{selected_chapter}`")
 
-# Initialize Session States
 if "messages" not in st.session_state: st.session_state.messages = []
 if "current_chapter" not in st.session_state: st.session_state.current_chapter = selected_chapter
 
-# Clear chat if user switches chapters
 if st.session_state.current_chapter != selected_chapter:
     st.session_state.messages = []
     st.session_state.current_chapter = selected_chapter
 
-# Display History
 for msg in st.session_state.messages:
     if msg["role"] == "user":
         st.markdown(f'<div class="user-msg"><b>You:</b><br>{msg["content"]}</div>', unsafe_allow_html=True)
@@ -105,9 +101,8 @@ for msg in st.session_state.messages:
         if msg.get("image"): st.image(msg["image"], width=400)
         if msg.get("audio"): st.audio(msg["audio"], format='audio/mp3')
 
-# Quick Concept Buttons
 if len(st.session_state.messages) == 0:
-    st.markdown("### 🔥 Key Concepts / महत्त्वाचे मुद्दे")
+    st.markdown("### 🔥 Key Concepts")
     q_lang_key = "English" 
     class_concepts = data.IMPORTANT_CONCEPTS.get(q_lang_key, {})
     concepts = class_concepts.get(selected_chapter, class_concepts.get("default", ["Overview"]))
@@ -132,23 +127,13 @@ if user_input:
     st.session_state.messages.append({"role": "user", "content": display_text})
     st.rerun()
 
-# Generate AI Response
 if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     last_user_msg = st.session_state.messages[-1]["content"]
-    
-    with st.spinner("🧠 Mentor is thinking..."):
+    with st.spinner("🧠 Thinking..."):
         ai_text = brain.get_ai_response(last_user_msg, st.session_state.messages[:-1], selected_class, selected_subject, selected_chapter, language_mode)
-        
         audio_data = None
         if enable_audio and "⚠️" not in ai_text:
             audio_data = brain.get_audio_bytes(ai_text, language_mode)
-        
         diagram_url = brain.get_relevant_diagram(last_user_msg)
-        
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": ai_text,
-            "audio": audio_data,
-            "image": diagram_url
-        })
+        st.session_state.messages.append({"role": "assistant", "content": ai_text, "audio": audio_data, "image": diagram_url})
         st.rerun()
