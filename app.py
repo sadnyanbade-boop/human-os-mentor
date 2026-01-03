@@ -11,34 +11,30 @@ st.set_page_config(
     page_title="Human OS: Maharashtra Mentor",
     page_icon="🧬",
     layout="wide",
-    initial_sidebar_state="collapsed" # Better for mobile users
+    initial_sidebar_state="auto"
 )
 
-# --- 2. CSS STYLING (The Final Solution) ---
+# --- 2. CSS STYLING (The Stable Precision Method) ---
 st.markdown("""
 <style>
-    /* 1. HIDE THE ENTIRE TOP HEADER (GitHub, Deploy, Toolbar, etc.) */
-    header {visibility: hidden !important;}
-    [data-testid="stHeader"] {display: none !important;}
-    [data-testid="stToolbar"] {display: none !important;}
-    footer {visibility: hidden !important;}
-
-    /* 2. CREATE A NEW FLOATING SIDEBAR BUTTON (Mobile Friendly) */
-    /* This creates a permanent, non-blinking menu button on the top left */
-    [data-testid="stSidebarCollapsedControl"] {
-        visibility: visible !important;
-        display: block !important;
-        position: fixed !important;
-        top: 15px !important;
-        left: 15px !important;
-        background-color: #4CAF50 !important; /* Green background */
-        border-radius: 50% !important;
-        z-index: 99999 !important;
-        color: white !important;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.3) !important;
+    /* 1. HIDE GITHUB, DEPLOY, & TOOLBAR (Right Side Only) */
+    /* This targets the specific container for the GitHub/Deploy buttons */
+    [data-testid="stHeader"] [data-testid="stToolbar"], 
+    .stDeployButton {
+        display: none !important;
+        visibility: hidden !important;
     }
 
-    /* 3. CHAT BUBBLES */
+    /* 2. HIDE THE DEFAULT MENU (Three Dots) & FOOTER */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+
+    /* 3. MAKE HEADER TRANSPARENT (Keeps the Sidebar Arrow visible) */
+    header {
+        background-color: rgba(0,0,0,0) !important;
+    }
+
+    /* 4. CHAT BUBBLES STYLING */
     .user-msg {
         background-color: rgba(0, 255, 128, 0.1);
         border: 1px solid rgba(0, 255, 128, 0.4);
@@ -80,7 +76,6 @@ subject_icon = "🧪" if "Science" in selected_subject else "📐"
 st.title(f"{subject_icon} {selected_subject}")
 st.caption(f"**Chapter:** `{selected_chapter}`")
 
-# Initialize Chat
 if "messages" not in st.session_state: st.session_state.messages = []
 if "current_chapter" not in st.session_state: st.session_state.current_chapter = selected_chapter
 
@@ -88,7 +83,6 @@ if st.session_state.current_chapter != selected_chapter:
     st.session_state.messages = []
     st.session_state.current_chapter = selected_chapter
 
-# Display History
 for msg in st.session_state.messages:
     if msg["role"] == "user":
         st.markdown(f'<div class="user-msg"><b>You:</b><br>{msg["content"]}</div>', unsafe_allow_html=True)
@@ -110,7 +104,6 @@ if len(st.session_state.messages) == 0:
 # --- 5. INPUT & AI LOGIC ---
 st.divider()
 user_input = None
-
 if "clicked_prompt" in st.session_state and st.session_state.clicked_prompt:
     user_input = st.session_state.clicked_prompt
     st.session_state.clicked_prompt = None
