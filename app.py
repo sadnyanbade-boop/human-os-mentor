@@ -14,27 +14,13 @@ st.set_page_config(
     initial_sidebar_state="auto"
 )
 
-# --- 2. CSS STYLING (The Stable Precision Method) ---
+# --- 2. STABLE UI STYLING ---
 st.markdown("""
 <style>
-    /* 1. HIDE GITHUB, DEPLOY, & TOOLBAR (Right Side Only) */
-    /* This targets the specific container for the GitHub/Deploy buttons */
-    [data-testid="stHeader"] [data-testid="stToolbar"], 
-    .stDeployButton {
-        display: none !important;
-        visibility: hidden !important;
-    }
-
-    /* 2. HIDE THE DEFAULT MENU (Three Dots) & FOOTER */
-    #MainMenu {visibility: hidden;}
+    /* 1. HIDE ONLY THE FOOTER (Stable) */
     footer {visibility: hidden;}
 
-    /* 3. MAKE HEADER TRANSPARENT (Keeps the Sidebar Arrow visible) */
-    header {
-        background-color: rgba(0,0,0,0) !important;
-    }
-
-    /* 4. CHAT BUBBLES STYLING */
+    /* 2. CHAT BUBBLES (Stable) */
     .user-msg {
         background-color: rgba(0, 255, 128, 0.1);
         border: 1px solid rgba(0, 255, 128, 0.4);
@@ -54,7 +40,7 @@ st.markdown("""
 # --- 3. SIDEBAR ---
 with st.sidebar:
     st.markdown("<h1 style='text-align: center;'>🧬</h1>", unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align: center;'>Human OS</h3>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>Human OS</h2>", unsafe_allow_html=True)
     st.divider()
     
     language_mode = st.radio("🗣️ Language", ["English", "Semi-English (Hinglish)", "Marathi (पूर्ण मराठी)"])
@@ -103,12 +89,11 @@ if len(st.session_state.messages) == 0:
 
 # --- 5. INPUT & AI LOGIC ---
 st.divider()
-user_input = None
+user_input = st.chat_input("Ask a doubt here...")
+
 if "clicked_prompt" in st.session_state and st.session_state.clicked_prompt:
     user_input = st.session_state.clicked_prompt
     st.session_state.clicked_prompt = None
-else:
-    user_input = st.chat_input("Ask a doubt here...")
 
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input.replace("Explain ", "")})
