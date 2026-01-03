@@ -14,13 +14,13 @@ st.set_page_config(
     initial_sidebar_state="auto"
 )
 
-# --- 2. STABLE UI STYLING ---
+# --- 2. CLEAN UI STYLING ---
 st.markdown("""
 <style>
-    /* 1. HIDE ONLY THE FOOTER (Stable) */
+    /* HIDE ONLY THE FOOTER (Safe & Stable) */
     footer {visibility: hidden;}
 
-    /* 2. CHAT BUBBLES (Stable) */
+    /* CHAT BUBBLES */
     .user-msg {
         background-color: rgba(0, 255, 128, 0.1);
         border: 1px solid rgba(0, 255, 128, 0.4);
@@ -33,6 +33,12 @@ st.markdown("""
         padding: 15px; border-radius: 15px 15px 15px 0px;
         margin: 10px 0; text-align: left;
         border-left: 4px solid #4CAF50;
+    }
+    
+    /* STYLING FOR DIAGRAMS */
+    div[data-testid="stImage"] {
+        background-color: white; padding: 10px; border-radius: 10px;
+        box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -62,13 +68,16 @@ subject_icon = "🧪" if "Science" in selected_subject else "📐"
 st.title(f"{subject_icon} {selected_subject}")
 st.caption(f"**Chapter:** `{selected_chapter}`")
 
+# Initialize Chat
 if "messages" not in st.session_state: st.session_state.messages = []
 if "current_chapter" not in st.session_state: st.session_state.current_chapter = selected_chapter
 
+# Reset if chapter changes
 if st.session_state.current_chapter != selected_chapter:
     st.session_state.messages = []
     st.session_state.current_chapter = selected_chapter
 
+# Display History
 for msg in st.session_state.messages:
     if msg["role"] == "user":
         st.markdown(f'<div class="user-msg"><b>You:</b><br>{msg["content"]}</div>', unsafe_allow_html=True)
@@ -77,6 +86,7 @@ for msg in st.session_state.messages:
         if msg.get("image"): st.image(msg["image"], width=400)
         if msg.get("audio"): st.audio(msg["audio"], format='audio/mp3')
 
+# Quick Prompts
 if len(st.session_state.messages) == 0:
     st.markdown("### 🔥 Key Concepts")
     class_concepts = data.IMPORTANT_CONCEPTS.get("English", {})
@@ -89,11 +99,12 @@ if len(st.session_state.messages) == 0:
 
 # --- 5. INPUT & AI LOGIC ---
 st.divider()
-user_input = st.chat_input("Ask a doubt here...")
-
+user_input = None
 if "clicked_prompt" in st.session_state and st.session_state.clicked_prompt:
     user_input = st.session_state.clicked_prompt
     st.session_state.clicked_prompt = None
+else:
+    user_input = st.chat_input("Ask a doubt here...")
 
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input.replace("Explain ", "")})
@@ -101,7 +112,7 @@ if user_input:
 
 if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
     last_user_msg = st.session_state.messages[-1]["content"]
-    with st.spinner("🧠 Thinking..."):
+    with st.spinner("🧠 Mentor is thinking..."):
         ai_text = brain.get_ai_response(last_user_msg, st.session_state.messages[:-1], selected_class, selected_subject, selected_chapter, language_mode)
         audio_data = None
         if enable_audio and "⚠️" not in ai_text:
