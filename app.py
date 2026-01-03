@@ -2,7 +2,7 @@ import streamlit as st
 import warnings
 warnings.filterwarnings("ignore")
 
-# Import our custom modules (Make sure data.py and brain.py are in your repo)
+# Import our custom modules (Ensure data.py and brain.py are in your GitHub)
 import data
 import brain
 
@@ -13,18 +13,23 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- 2. CSS STYLING ("Stealth Mode" & Pro UI) ---
+# --- 2. CSS STYLING (Smart Stealth Mode) ---
 st.markdown("""
 <style>
-    /* 1. THE "NUCLEAR OPTION" TO HIDE GITHUB/MENU/HEADER */
-    header {visibility: hidden;}
-    [data-testid="stHeader"] {visibility: hidden;}
-    [data-testid="stToolbar"] {visibility: hidden;}
+    /* 1. HIDE GITHUB ICON & DEPLOY BUTTON ONLY */
+    /* This removes the code links but keeps the top bar functional for mobile */
     .stDeployButton {display:none;}
+    [data-testid="stHeader"] [data-testid="stToolbar"] {display:none;}
+    
+    /* 2. HIDE MENU & FOOTER */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
 
-    /* 2. CHAT BUBBLES STYLING */
+    /* 3. MOBILE SIDEBAR OPTIMIZATION */
+    /* Ensures the sidebar ☰ button is accessible on small screens */
+    [data-testid="stSidebarNav"] {margin-top: -50px;}
+
+    /* 4. CHAT BUBBLES STYLING */
     .user-msg {
         background-color: rgba(0, 255, 128, 0.1);
         border: 1px solid rgba(0, 255, 128, 0.4);
@@ -39,13 +44,13 @@ st.markdown("""
         border-left: 4px solid #4CAF50;
     }
     
-    /* 3. DIAGRAM CARD STYLING */
+    /* 5. DIAGRAM CARD STYLING */
     div[data-testid="stImage"] {
         background-color: white; padding: 20px; border-radius: 10px;
         margin: 10px 0; box-shadow: 0px 4px 6px rgba(0,0,0,0.1); display: inline-block;
     }
     
-    /* 4. BUTTON STYLING */
+    /* 6. BUTTON STYLING */
     .stButton>button {
         border-radius: 8px; min-height: 3em; height: auto;
         white-space: normal;
@@ -99,48 +104,3 @@ if len(st.session_state.messages) == 0:
     st.markdown("### 🔥 Key Concepts / महत्त्वाचे मुद्दे")
     q_lang_key = "English" 
     class_concepts = data.IMPORTANT_CONCEPTS.get(q_lang_key, {})
-    concepts = class_concepts.get(selected_chapter, class_concepts.get("default", ["Overview"]))
-    
-    cols = st.columns(3)
-    for i, concept in enumerate(concepts):
-        if cols[i % 3].button(f"📌 {concept}", use_container_width=True, key=f"btn_{i}"):
-            st.session_state.clicked_prompt = f"Explain {concept}"
-
-# --- 5. INPUT & AI LOGIC ---
-st.divider()
-user_input = None
-
-if "clicked_prompt" in st.session_state and st.session_state.clicked_prompt:
-    user_input = st.session_state.clicked_prompt
-    st.session_state.clicked_prompt = None
-else:
-    user_input = st.chat_input("Ask a doubt here...")
-
-if user_input:
-    display_text = user_input.replace("Explain ", "")
-    st.session_state.messages.append({"role": "user", "content": display_text})
-    st.rerun()
-
-# Generate AI Response
-if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
-    last_user_msg = st.session_state.messages[-1]["content"]
-    
-    with st.spinner("🧠 Mentor is thinking..."):
-        # 1. Text Response
-        ai_text = brain.get_ai_response(last_user_msg, st.session_state.messages[:-1], selected_class, selected_subject, selected_chapter, language_mode)
-        
-        # 2. Audio Generation
-        audio_data = None
-        if enable_audio and "⚠️" not in ai_text:
-            audio_data = brain.get_audio_bytes(ai_text, language_mode)
-        
-        # 3. Diagram Fetching
-        diagram_url = brain.get_relevant_diagram(last_user_msg)
-        
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": ai_text,
-            "audio": audio_data,
-            "image": diagram_url
-        })
-        st.rerun()
