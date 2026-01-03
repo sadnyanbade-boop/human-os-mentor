@@ -1,18 +1,27 @@
-# app.py
 import streamlit as st
 import warnings
 warnings.filterwarnings("ignore")
 
-# Import our custom modules
+# Import our custom modules (Your 3-file structure)
 import data
 import brain
 
 # --- 1. PAGE SETUP ---
-st.set_page_config(page_title="Human OS: Maharashtra Mentor", page_icon="🧬", layout="wide")
+st.set_page_config(
+    page_title="Human OS: Maharashtra Mentor",
+    page_icon="🧬",
+    layout="wide"
+)
 
-# --- 2. CSS STYLING ---
+# --- 2. CSS STYLING (The "Pro" Look) ---
 st.markdown("""
 <style>
+    /* HIDE STREAMLIT BRANDING (Stealth Mode) */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Chat Bubbles */
     .user-msg {
         background-color: rgba(0, 255, 128, 0.1);
         border: 1px solid rgba(0, 255, 128, 0.4);
@@ -26,6 +35,7 @@ st.markdown("""
         margin: 10px 0; text-align: left;
         border-left: 4px solid #4CAF50;
     }
+    /* White Card for Diagrams (Dark Mode fix) */
     div[data-testid="stImage"] {
         background-color: white; padding: 20px; border-radius: 10px;
         margin: 10px 0; box-shadow: 0px 4px 6px rgba(0,0,0,0.1); display: inline-block;
@@ -46,7 +56,7 @@ with st.sidebar:
     language_mode = st.radio("🗣️ Language", ["English", "Semi-English (Hinglish)", "Marathi (पूर्ण मराठी)"])
     
     st.subheader("📚 Syllabus")
-    # Dynamic Dropdowns from data.py
+    # Dynamic Dropdowns fetching from data.py
     selected_class = st.selectbox("Class", list(data.MAHARASHTRA_SYLLABUS.keys()))
     selected_subject = st.selectbox("Subject", list(data.MAHARASHTRA_SYLLABUS[selected_class].keys()))
     selected_chapter = st.selectbox("Chapter", data.MAHARASHTRA_SYLLABUS[selected_class][selected_subject])
@@ -55,7 +65,7 @@ with st.sidebar:
     enable_audio = st.toggle("🔊 Audio Mode", value=True)
 
 # --- 4. MAIN CHAT INTERFACE ---
-subject_icon = "🧪" if "Science" in selected_subject else "📐"
+subject_icon = "🧪" if "Science" in selected_subject or "Science" in selected_subject else "📐"
 st.title(f"{subject_icon} {selected_subject}")
 st.caption(f"**Chapter:** `{selected_chapter}`")
 
@@ -77,11 +87,13 @@ for msg in st.session_state.messages:
         if msg.get("image"): st.image(msg["image"], width=300)
         if msg.get("audio"): st.audio(msg["audio"], format='audio/mp3')
 
-# Quick Topic Buttons
+# Quick Topic Buttons (Dynamic Grid)
 if len(st.session_state.messages) == 0:
     st.markdown("### 🔥 Key Concepts / महत्त्वाचे मुद्दे")
     q_lang_key = "English" # Default to English keys for button logic
-    concepts = data.IMPORTANT_CONCEPTS.get(q_lang_key, {}).get(selected_chapter, data.IMPORTANT_CONCEPTS[q_lang_key]["default"])
+    # Fetch concepts safely
+    class_concepts = data.IMPORTANT_CONCEPTS.get(q_lang_key, {})
+    concepts = class_concepts.get(selected_chapter, class_concepts.get("default", ["Key Concepts"]))
     
     cols = st.columns(3)
     for i, concept in enumerate(concepts):
@@ -108,7 +120,7 @@ if st.session_state.messages and st.session_state.messages[-1]["role"] == "user"
     last_user_msg = st.session_state.messages[-1]["content"]
     
     with st.spinner("🧠 Thinking... Fetching Visuals... Recording Audio..."):
-        # 1. Text Response
+        # 1. Text Response (Sandwich Method from brain.py)
         ai_text = brain.get_ai_response(last_user_msg, st.session_state.messages[:-1], selected_class, selected_subject, selected_chapter, language_mode)
         
         # 2. Audio Generation
